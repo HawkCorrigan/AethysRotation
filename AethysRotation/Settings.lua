@@ -232,6 +232,9 @@
             -- Racial
             Berserking = {true, false}
           }
+        },
+        Elemental = {
+
         }
       },
       Warrior = {
