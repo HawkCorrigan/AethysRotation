@@ -4,13 +4,14 @@
   local addonName, AR = ...;
   -- AethysCore
   local AC = AethysCore;
-  local Cache = AethysCore_Cache;
+  local Cache = AethysCache;
   local Unit = AC.Unit;
   local Player = Unit.Player;
   local Target = Unit.Target;
   local Spell = AC.Spell;
   local Item = AC.Item;
   -- Lua
+  local mathmin = math.min;
   local print = print;
   local select = select;
   local stringlower = string.lower;
@@ -41,13 +42,9 @@
   function AR.GetTexture (Object)
     if Object.SpellID then
       if not Cache.Persistent.Texture.Spell[Object.SpellID] then
-        -- Check if the SpellID is the one from Custom Icons or a Reguler WoW Spell
+        -- Check if the SpellID is the one from Custom Textures or a Regular WoW Spell
         if Object.SpellID >= 9999000000 then
-          if Object.SpellID >= 9999000000 and Object.SpellID <= 9999000010 then
-            Cache.Persistent.Texture.Spell[Object.SpellID] = "Interface\\Addons\\AethysRotation\\Textures\\"..tostring(Object.SpellID);
-          else
-            Cache.Persistent.Texture.Spell[Object.SpellID] = "Interface\\Addons\\AethysRotation_" .. AC.SpecID_ClassesSpecs[tonumber(string.sub(tostring(Object.SpellID), 5, 7))][1] .. "\\Textures\\"..tostring(Object.SpellID);
-          end
+          Cache.Persistent.Texture.Spell[Object.SpellID] = "Interface\\Addons\\AethysRotation\\Textures\\"..tostring(Object.SpellID);
         else
           Cache.Persistent.Texture.Spell[Object.SpellID] = GetSpellTexture(Object.SpellID);
         end
@@ -62,9 +59,16 @@
   end
 
 --- ======= CASTS =======
+  local GCDSpell = Spell(61304);
+  local function GCDDislay ()
+    if Player:IsCasting() then -- Only for Cast, not Channel
+      AR.MainIconFrame:SetCooldown(Player:CastStart(), Player:CastDuration());
+    else
+      AR.MainIconFrame:SetCooldown(GCDSpell:CooldownInfo());
+    end
+  end
   -- Main Cast
   AR.CastOffGCDOffset = 1;
-  local GCDSpell = Spell(61304);
   function AR.Cast (Object, OffGCD)
     if OffGCD and OffGCD[1] then
       if AR.CastOffGCDOffset <= 2 then
@@ -75,18 +79,26 @@
       end
     else
       AR.MainIconFrame:ChangeIcon(AR.GetTexture(Object));
-
-      -- Icon Cooldown
-      if Player:IsCasting() then -- Only for Cast, not Channel
-        AR.MainIconFrame:SetCooldown(Player:CastStart(), Player:CastDuration());
-      else
-        AR.MainIconFrame:SetCooldown(GCDSpell:CooldownInfo());
-      end
-
+      GCDDislay();
       Object.LastDisplayTime = AC.GetTime();
       return "Should Return";
     end
     return false;
+  end
+  -- Main Cast Queue
+  local QueueSpellTable, QueueLength, QueueTextureTable;
+  AR.MaxQueuedCasts = 3;
+  function AR.CastQueue (...)
+    QueueSpellTable = {...};
+    QueueLength = mathmin(#QueueSpellTable, AR.MaxQueuedCasts);
+    QueueTextureTable = {};
+    for i = 1, QueueLength do
+      QueueTextureTable[i] = AR.GetTexture(QueueSpellTable[i]);
+      QueueSpellTable[i].LastDisplayTime = AC.GetTime();
+    end
+    AR.MainIconFrame:SetupParts(QueueTextureTable);
+    GCDDislay();
+    return "Should Return";
   end
 
   -- Left (+ Nameplate) Cast
@@ -127,12 +139,15 @@
     Argument1, Argument2, Argument3 = strsplit(" ", stringlower(Message));
     if Argument1 == "cds" then
       AethysRotationDB.Toggles[1] = not AethysRotationDB.Toggles[1];
+      AR.ToggleIconFrame:UpdateButtonText(1);
       AR.Print("CDs are now "..(AethysRotationDB.Toggles[1] and "|cff00ff00enabled|r." or "|cffff0000disabled|r."));
     elseif Argument1 == "aoe" then
       AethysRotationDB.Toggles[2] = not AethysRotationDB.Toggles[2];
+      AR.ToggleIconFrame:UpdateButtonText(2);
       AR.Print("AoE is now "..(AethysRotationDB.Toggles[2] and "|cff00ff00enabled|r." or "|cffff0000disabled|r."));
     elseif Argument1 == "toggle" then
       AethysRotationDB.Toggles[3] = not AethysRotationDB.Toggles[3];
+      AR.ToggleIconFrame:UpdateButtonText(3);
       AR.Print("AethysRotation is now "..(AethysRotationDB.Toggles[3] and "|cff00ff00enabled|r." or "|cffff0000disabled|r."));
     elseif Argument1 == "unlock" then
       AR.MainFrame:Unlock();
@@ -170,13 +185,17 @@
     elseif Argument1 == "resetbuttons" then
       AR.ToggleIconFrame:ResetAnchor();
     elseif Argument1 == "help" then
-      AR.Print("Toggle ON/OFF: |cff8888ff/aer toggle|r");
-      AR.Print("CDs: |cff8888ff/aer cds|r | AoE: |cff8888ff/aer aoe|r");
-      AR.Print("UI Lock: |cff8888ff/aer lock|r | UI Unlock: |cff8888ff/aer unlock|r");
-      AR.Print("UI Scale: |cff8888ff/aer scale|r |cff88ff88[Type]|r |cffff8888[Size]|r");
-      AR.Print("[Type]: |cff88ff88ui|r, |cff88ff88buttons|r, |cff88ff88all|r");
-      AR.Print("[Size]: |cffff8888number > 0 and <= 10|r");
-      AR.Print("Button Anchor Reset : |cff8888ff/aer resetbuttons|r");
+      AR.Print("|cffffff00--[Toggles]--|r");
+      AR.Print("  On/Off: |cff8888ff/aer toggle|r");
+      AR.Print("  CDs: |cff8888ff/aer cds|r");
+      AR.Print("  AoE: |cff8888ff/aer aoe|r");
+      AR.Print("|cffffff00--[User Interface]--|r");
+      AR.Print("  UI Lock: |cff8888ff/aer lock|r");
+      AR.Print("  UI Unlock: |cff8888ff/aer unlock|r");
+      AR.Print("  UI Scale: |cff8888ff/aer scale|r |cff88ff88[Type]|r |cffff8888[Size]|r");
+      AR.Print("    [Type]: |cff88ff88ui|r, |cff88ff88buttons|r, |cff88ff88all|r");
+      AR.Print("    [Size]: |cffff8888number > 0 and <= 10|r");
+      AR.Print("  Button Anchor Reset : |cff8888ff/aer resetbuttons|r");
     else
       AR.Print("Invalid arguments.");
       AR.Print("Type |cff8888ff/aer help|r for more infos.");

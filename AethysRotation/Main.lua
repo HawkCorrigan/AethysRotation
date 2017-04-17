@@ -4,7 +4,7 @@
   local addonName, AR = ...;
   -- AethysCore
   local AC = AethysCore;
-  local Cache = AethysCore_Cache;
+  local Cache = AethysCache;
   local Unit = AC.Unit;
   local Player = Unit.Player;
   local Target = Unit.Target;
@@ -20,6 +20,12 @@
 
 
 --- ============================ CONTENT ============================
+--- ======= BINDINGS =======
+  BINDING_HEADER_AETHYSROTATION = "AethysRotation";
+  BINDING_NAME_AETHYSROTATION_CDS = "Toggle CDs";
+  BINDING_NAME_AETHYSROTATION_AOE = "Toggle AoE";
+  BINDING_NAME_AETHYSROTATION_TOGGLE = "Toggle On/Off";
+
 --- ======= MAIN FRAME =======
   AR.MainFrame = CreateFrame("Frame", "AethysRotation_MainFrame", UIParent);
   AR.MainFrame:SetFrameStrata(AR.GUISettings.General.MainFrameStrata);
@@ -51,16 +57,16 @@
       local FramesToResize = {
         -- TODO: Put the Size in one Array in UI.lua and pull it out here
         {AR.ToggleIconFrame, 64, 20},
-        {AR.Button[1], 20, 20},
-        {AR.Button[2], 20, 20},
-        {AR.Button[3], 20, 20}
+        {AR.ToggleIconFrame.Button[1], 20, 20},
+        {AR.ToggleIconFrame.Button[2], 20, 20},
+        {AR.ToggleIconFrame.Button[3], 20, 20}
       };
       for Key, Value in pairs(FramesToResize) do
         Value[1]:SetWidth(Value[2]*Multiplier);
         Value[1]:SetHeight(Value[3]*Multiplier);
       end
       for i = 1, 3 do
-        AR.Button[i]:SetPoint("LEFT", AR.ToggleIconFrame, "LEFT", AR.Button[i]:GetWidth()*(i-1)+i, 0);
+        AR.ToggleIconFrame.Button[i]:SetPoint("LEFT", AR.ToggleIconFrame, "LEFT", AR.ToggleIconFrame.Button[i]:GetWidth()*(i-1)+i, 0);
       end
       AethysRotationDB.ScaleButtons = Multiplier;
     end
@@ -141,6 +147,9 @@
           UIFrames = {
             AR.MainFrame,
             AR.MainIconFrame,
+            AR.MainIconFrame.Part[1],
+            AR.MainIconFrame.Part[2],
+            AR.MainIconFrame.Part[3],
             AR.SmallIconFrame,
             AR.SmallIconFrame.Icon[1],
             AR.SmallIconFrame.Icon[2],
@@ -172,13 +181,13 @@
       [577]   = false,                          -- Havoc
       [581]   = "AethysRotation_DemonHunter",   -- Vengeance
     -- Druid
-      [102]   = false,                          -- Balance
+      [102]   = "AethysRotation_Druid",			-- Balance
       [103]   = false,                          -- Feral
       [104]   = false,                          -- Guardian
       [105]   = false,                          -- Restoration
     -- Hunter
       [253]   = "AethysRotation_Hunter",        -- Beast Mastery
-      [254]   = false,                          -- Marksmanship
+      [254]   = "AethysRotation_Hunter",        -- Marksmanship
       [255]   = "AethysRotation_Hunter",        -- Survival
     -- Mage
       [62]    = false,                          -- Arcane
@@ -220,6 +229,11 @@
     Cache.Persistent.Player.Class = {UnitClass("player")};
     Cache.Persistent.Player.Spec = {GetSpecializationInfo(GetSpecialization())};
 
+    -- Note: Prevent the UI to disappear if the spec isn't yet known by the WoW API.
+    if EnabledRotation[Cache.Persistent.Player.Spec[1]] == nil then
+      return "Invalid SpecID";
+    end
+
     -- Load the Class Module if it's possible and not already loaded
     if EnabledRotation[Cache.Persistent.Player.Spec[1]] and not IsAddOnLoaded(EnabledRotation[Cache.Persistent.Player.Spec[1]]) then
       LoadAddOn(EnabledRotation[Cache.Persistent.Player.Spec[1]]);
@@ -256,7 +270,7 @@
       -- Check if we are ready to cast something to save FPS.
       if AR.ON() and AR.Ready() then
         AC.CacheHasBeenReset = false;
-        AC.CacheReset();
+        Cache.Reset();
         AR.APLs[Cache.Persistent.Player.Spec[1]]();
       end
     end

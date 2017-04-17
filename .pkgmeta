@@ -1,12 +1,13 @@
 package-as: AethysRotation
 
 externals:
- AethysCore:  
+ AethysCore:
   url: https://github.com/Aethys256/AethysCore
 
 move-folders:
  AethysRotation/AethysRotation: AethysRotation
- AethysRotation/AethysCore: AethysCore
+ AethysRotation/AethysCore/AethysCache: AethysCache
+ AethysRotation/AethysCore/AethysCore: AethysCore
  AethysRotation/AethysRotation_DemonHunter: AethysRotation_DemonHunter
  AethysRotation/AethysRotation_Druid: AethysRotation_Druid
  AethysRotation/AethysRotation_Hunter: AethysRotation_Hunter

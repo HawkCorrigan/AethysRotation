@@ -4,7 +4,7 @@
   local addonName, AR = ...;
   -- AethysCore
   local AC = AethysCore;
-  local Cache = AethysCore_Cache;
+  local Cache = AethysCache;
   local Unit = AC.Unit;
   local Player = Unit.Player;
   local Target = Unit.Target;
@@ -37,6 +37,7 @@
     -- Main Icon
     AR.MainIconFrame:ChangeIcon(AR.GetTexture(IdleSpell)); 
     if AR.GUISettings.General.BlackBorderIcon then AR.MainIconFrame.Backdrop:Hide(); end
+    AR.MainIconFrame:HideParts();
 
     -- Small Icons
     AR.SmallIconFrame:HideIcons();
@@ -48,6 +49,7 @@
 
     -- Suggested Icon
     AR.SuggestedIconFrame:HideIcon();
+    if AR.GUISettings.General.BlackBorderIcon then AR.SuggestedIconFrame.Backdrop:Hide(); end
     AR.CastSuggestedOffset = 1;
   end
 
@@ -96,6 +98,7 @@
       self.TempTexture:SetTexCoord(.08, .92, .08, .92);
       AR:CreateBackdrop(self);
     end
+    self:InitParts();
     self:Show();
   end
   -- Change Texture (1 Arg for Texture, 3 Args for Color)
@@ -108,6 +111,46 @@
   -- Set a Cooldown Frame
   function AR.MainIconFrame:SetCooldown (Start, Duration)
     self.CooldownFrame:SetCooldown(Start, Duration);
+  end
+  function AR.MainIconFrame:InitParts ()
+    self.Part = {};
+    for i = 1, AR.MaxQueuedCasts do
+      self.Part[i] = CreateFrame("Frame", "AethysRotation_MainIconPartFrame"..tostring(i), UIParent);
+      self.Part[i]:SetFrameStrata(self:GetFrameStrata());
+      self.Part[i]:SetFrameLevel(self:GetFrameLevel() + 1);
+      self.Part[i]:SetWidth(64);
+      self.Part[i]:SetHeight(64);
+      self.Part[i]:SetPoint("Left", self, "Left", 0, 0);
+      self.Part[i].TempTexture = self.Part[i]:CreateTexture(nil, "BACKGROUND");
+      if AR.GUISettings.General.BlackBorderIcon then
+        self.Part[i].TempTexture:SetTexCoord(.08, .92, .08, .92);
+        AR:CreateBackdrop(self.Part[i]);
+      end
+      self.Part[i]:Show();
+    end
+  end
+  local QueuedCasts;
+  function AR.MainIconFrame:SetupParts (Textures)
+    QueuedCasts = #Textures;
+    for i = 1, QueuedCasts do
+      self.Part[i]:SetWidth(64/QueuedCasts);
+      self.Part[i]:SetPoint("Left", self, "Left", 64/QueuedCasts*(i-1), 0);
+      self.Part[i].TempTexture:SetTexture(Textures[i]);
+      self.Part[i].TempTexture:SetAllPoints(self.Part[i]);
+      self.Part[i].TempTexture:SetTexCoord(i == 1 and (AR.GUISettings.General.BlackBorderIcon and 0.08 or 0) or (i-1)/QueuedCasts,
+                                            i == AR.MaxQueuedCasts and (AR.GUISettings.General.BlackBorderIcon and 0.92 or 1) or i/QueuedCasts,
+                                            AR.GUISettings.General.BlackBorderIcon and 0.08 or 0,
+                                            AR.GUISettings.General.BlackBorderIcon and 0.92 or 1);
+      self.Part[i].texture = self.Part[i].TempTexture;
+      if not self.Part[i]:IsVisible() then
+        self.Part[i]:Show();
+      end
+    end
+  end
+  function AR.MainIconFrame:HideParts ()
+    for i = 1, #self.Part do
+      self.Part[i]:Hide();
+    end
   end
 
 --- ======= SMALL ICONS =======
@@ -237,6 +280,10 @@
     self:SetHeight(32);
     self:SetPoint("BOTTOM", AR.MainIconFrame, "LEFT", -AR.LeftIconFrame:GetWidth()/2, AR.LeftIconFrame:GetHeight()/2+(AR.GUISettings.General.BlackBorderIcon and 3 or 4));
     self.TempTexture = self:CreateTexture(nil, "BACKGROUND");
+    if AR.GUISettings.General.BlackBorderIcon then
+      self.TempTexture:SetTexCoord(.08, .92, .08, .92);
+      AR:CreateBackdrop(self);
+    end
     self:Show();
   end
   -- Change Texture (1 Arg for Texture, 3 Args for Color)
@@ -247,6 +294,7 @@
     if not self:IsVisible() then
       self:Show();
     end
+    if AR.GUISettings.General.BlackBorderIcon and not self.Backdrop:IsVisible() then self.Backdrop:Show(); end
   end
   -- Hide Icon
   function AR.SuggestedIconFrame:HideIcon ()
@@ -302,41 +350,30 @@
     self:SetScript("OnHide", StopMove);
 
     self:Show();
-    self:AddButton("C", 1, "CDs");
-    self:AddButton("A", 2, "AoE");
-    self:AddButton("O", 3, "On/Off");
+
+    -- Button Creation
+    self.Button = {};
+    self:AddButton("C", 1, "CDs", "cds");
+    self:AddButton("A", 2, "AoE", "aoe");
+    self:AddButton("O", 3, "On/Off", "toggle");
   end
   -- Reset Anchor
   function AR.ToggleIconFrame:ResetAnchor ()
     self:SetPoint("TOPLEFT", AR.MainIconFrame, "BOTTOMLEFT", 0, AR.GUISettings.General.BlackBorderIcon and -3 or 0);
     AethysRotationDB.ButtonsFramePos = false;
   end
-  -- Buttons
-  AR.Button = {};
-  function AR.ToggleIconFrame:AddButton (Text, i, Tooltip)
-    AR.Button[i] = CreateFrame("Button", "$parentButton"..tostring(i), self);
-    AR.Button[i]:SetFrameStrata(self:GetFrameStrata());
-    AR.Button[i]:SetFrameLevel(self:GetFrameLevel() - 1);
-    AR.Button[i]:SetWidth(20);
-    AR.Button[i]:SetHeight(20);
-    AR.Button[i]:SetPoint("LEFT", self, "LEFT", 20*(i-1)+i, 0);
-    AR.Button[i].TimeSinceLastUpdate = 0;
-    AR.Button[i].UpdateInterval = 0.25;
-    AR.Button[i]:SetScript("OnUpdate",
-      function (self, elapsed)
-        self.TimeSinceLastUpdate = self.TimeSinceLastUpdate + elapsed;
-        if self.TimeSinceLastUpdate > self.UpdateInterval then
-          if AethysRotationDB.Toggles[i] then
-            AR.Button[i]:SetFormattedText("|cff00ff00%s|r", Text);
-          else
-            AR.Button[i]:SetFormattedText("|cffff0000%s|r", Text);
-          end
-          self.TimeSinceLastUpdate = 0;
-        end
-      end
-    );
+  -- Add a button
+  function AR.ToggleIconFrame:AddButton (Text, i, Tooltip, CmdArg)
+    self.Button[i] = CreateFrame("Button", "$parentButton"..tostring(i), self);
+    self.Button[i]:SetFrameStrata(self:GetFrameStrata());
+    self.Button[i]:SetFrameLevel(self:GetFrameLevel() - 1);
+    self.Button[i]:SetWidth(20);
+    self.Button[i]:SetHeight(20);
+    self.Button[i]:SetPoint("LEFT", self, "LEFT", 20*(i-1)+i, 0);
+
+    -- Button Tooltip (Optional)
     if Tooltip then
-      AR.Button[i]:SetScript("OnEnter",
+      self.Button[i]:SetScript("OnEnter",
         function (self)
           GameTooltip:SetOwner(AR.ToggleIconFrame, "ANCHOR_BOTTOM", 0, 0);
           GameTooltip:ClearLines();
@@ -345,42 +382,62 @@
           GameTooltip:Show();
         end
       );
-      AR.Button[i]:SetScript("OnLeave",
+      self.Button[i]:SetScript("OnLeave",
         function (self)
           GameTooltip:Hide();
         end
       );
     end
-    AR.Button[i]:SetNormalFontObject("GameFontNormalSmall");
-    local ntex = AR.Button[i]:CreateTexture();
-    ntex:SetTexture("Interface/Buttons/UI-Silver-Button-Up");
-    ntex:SetTexCoord(0, 0.625, 0, 0.7875);
-    ntex:SetAllPoints();
-    AR.Button[i]:SetNormalTexture(ntex);
-    local htex = AR.Button[i]:CreateTexture();
-    htex:SetTexture("Interface/Buttons/UI-Silver-Button-Highlight");
-    htex:SetTexCoord(0, 0.625, 0, 0.7875);
-    htex:SetAllPoints();
-    AR.Button[i]:SetHighlightTexture(htex);
-    local ptex = AR.Button[i]:CreateTexture();
-    ptex:SetTexture("Interface/Buttons/UI-Silver-Button-Down");
-    ptex:SetTexCoord(0, 0.625, 0, 0.7875);
-    ptex:SetAllPoints();
-    AR.Button[i]:SetPushedTexture(ptex);
-    if not AethysRotationDB then
+
+    -- Button Text
+    self.Button[i]:SetNormalFontObject("GameFontNormalSmall");
+    self.Button[i].text = Text;
+
+    -- Button Texture
+    local normalTexture = self.Button[i]:CreateTexture();
+    normalTexture:SetTexture("Interface/Buttons/UI-Silver-Button-Up");
+    normalTexture:SetTexCoord(0, 0.625, 0, 0.7875);
+    normalTexture:SetAllPoints();
+    self.Button[i]:SetNormalTexture(normalTexture);
+    local highlightTexture = self.Button[i]:CreateTexture();
+    highlightTexture:SetTexture("Interface/Buttons/UI-Silver-Button-Highlight");
+    highlightTexture:SetTexCoord(0, 0.625, 0, 0.7875);
+    highlightTexture:SetAllPoints();
+    self.Button[i]:SetHighlightTexture(highlightTexture);
+    local pushedTexture = self.Button[i]:CreateTexture();
+    pushedTexture:SetTexture("Interface/Buttons/UI-Silver-Button-Down");
+    pushedTexture:SetTexCoord(0, 0.625, 0, 0.7875);
+    pushedTexture:SetAllPoints();
+    self.Button[i]:SetPushedTexture(pushedTexture);
+
+    -- Button Setting
+    if type(AethysRotationDB) ~= "table" then
       AethysRotationDB = {};
     end
-    if not AethysRotationDB.Toggles then
+    if type(AethysRotationDB.Toggles) ~= "table" then
       AethysRotationDB.Toggles = {};
     end
-    AethysRotationDB.Toggles[i] = true;
-    local Argument = i == 1 and "cds" or i == 2 and "aoe" or i == 3 and "toggle";
-    AR.Button[i]:SetScript("OnMouseDown",
+    if type(AethysRotationDB.Toggles[i]) ~= "boolean" then
+      AethysRotationDB.Toggles[i] = true;
+    end
+
+    -- OnClick Callback
+    self.Button[i]:SetScript("OnMouseDown",
       function (self, Button)
         if Button == "LeftButton" then
-          AR.CmdHandler(Argument);
+          AR.CmdHandler(CmdArg);
         end
       end
     );
-    AR.Button[i]:Show();
+
+    AR.ToggleIconFrame:UpdateButtonText(i);
+    self.Button[i]:Show();
+  end
+  -- Update a button text
+  function AR.ToggleIconFrame:UpdateButtonText (i)
+    if AethysRotationDB.Toggles[i] then
+      self.Button[i]:SetFormattedText("|cff00ff00%s|r", self.Button[i].text);
+    else
+      self.Button[i]:SetFormattedText("|cffff0000%s|r", self.Button[i].text);
+    end
   end
