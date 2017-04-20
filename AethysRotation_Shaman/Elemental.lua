@@ -48,9 +48,9 @@
     AscendanceBuff                = Spell(114051),
     EarthgrabTotem                = Spell(51485),
     ElementalBlast                = Spell(117014),
-    LighningSurgeTotem            = Spell(192058),
+    LightningSurgeTotem            = Spell(192058),
     -- Artifact
-    SwellingMaelstrom             = Spell()
+    SwellingMaelstrom             = Spell(238105),
     -- Defensive
     AstralShift                   = Spell(108271),
     HealingSurge                  = Spell(188070),
@@ -64,6 +64,7 @@
     WaterWalking                  = Spell(546),
     WindShear                     = Spell(57994),
     -- Legendaries
+    EchoesOfTheGreatSundering     = Spell(208722),
     -- Misc
 
     -- Macros
@@ -91,15 +92,15 @@
   local function Ascendance()
     --# Single Target Action Priority List for Ascendance Spec
     --actions.single_asc=ascendance,if=dot.flame_shock.remains>buff.ascendance.duration&(time>=60|buff.bloodlust.up)&cooldown.lava_burst.remains>0&!buff.stormkeeper.up
-    if S.Ascendance:IsCastable() and Target.DebuffRemains(S.FlameShock)>15 and not Player.Buff(Stormkeeper) then
+    if S.Ascendance:IsCastable() and Target:DebuffRemains(S.FlameShock)>15 and not Player:Buff(S.Stormkeeper) then
       if AR.Cast(S.Ascendance) then return ""; end
     end
     --actions.single_asc+=/flame_shock,if=!ticking|dot.flame_shock.remains<=gcd
-    if S.FlameShock:IsCastable() and (not Target.Debuff(S.FlameShock) or Target.DebuffRemains(S.FlameShock)<1.5) then
+    if S.FlameShock:IsCastable() and (not Target:Debuff(S.FlameShock) or Target:DebuffRemains(S.FlameShock)<1.5) then
       if AR.Cast(S.FlameShock) then return ""; end
     end
     --actions.single_asc+=/flame_shock,if=maelstrom>=20&remains<=buff.ascendance.duration&cooldown.ascendance.remains+buff.ascendance.duration<=duration
-    if S.FlameShock:IsCastable() and Player.Maelstrom>=20 and Target.DebuffRemains<=15 and Player.CooldownRemains(Ascendance)+15<=30 then
+    if S.FlameShock:IsCastable() and Player:Maelstrom()>=20 and Target:DebuffRemains(S.FlameShock)<=15 and S.Ascendance:Cooldown()+15<=30 then
       if AR.Cast(S.FlameShock) then return ""; end
   end
     --actions.single_asc+=/elemental_blast
@@ -107,7 +108,7 @@
       if AR.Cast(S.ElementalBlast) then return ""; end
     end
     --actions.single_asc+=/earthquake,if=buff.echoes_of_the_great_sundering.up&!buff.ascendance.up&maelstrom>=86
-    if S.Earthquake:IsCastable() and Player.Buff(EchoesOfTheGreatSundering) and not Player.Buff(Ascendance) and Player.Maelstrom>=86 then
+    if S.Earthquake:IsCastable() and Player.Buff(S.EchoesOfTheGreatSundering) and not Player:Buff(S.AscendanceBuff) and Player:Maelstrom()>=86 then
       if AR.Cast(S.Earthquake) then return ""; end
     end
     --actions.single_asc+=/earth_shock,if=maelstrom>=117|!artifact.swelling_maelstrom.enabled&maelstrom>=92
@@ -126,21 +127,21 @@
       if AR.Cast(S.LavaBurst) then return ""; end
     end
     --actions.single_asc+=/flame_shock,if=maelstrom>=20&buff.elemental_focus.up,target_if=refreshable
-    if S.FlameShock:IsCastable() and Player.Maelstrom()>=20 and Player.Buff(ElementalFocus) and Target.DebuffRemains(S.FlameShock)<=9 then
+    if S.FlameShock:IsCastable() and Player:Maelstrom()>=20 and Player:Buff(S.ElementalFocus) and Target:DebuffRemains(S.FlameShock)<=9 then
       if AR.Cast(S.FlameShock) then return ""; end
     end
     --actions.single_asc+=/earth_shock,if=maelstrom>=111|!artifact.swelling_maelstrom.enabled&maelstrom>=86
-    if S.EarthShock:IsCastable() and Player.Maelstrom()>=111 or (not SwellingMaelstrom and Player.Maelstrom()>86) then
+    if S.EarthShock:IsCastable() and Player:Maelstrom()>=111 or (not S.SwellingMaelstrom:ArtifactEnabled() and Player:Maelstrom()>86) then
       if AR.Cast(S.EarthShock) then return ""; end
     end
     --actions.single_asc+=/totem_mastery,if=buff.resonance_totem.remains<10|(buff.resonance_totem.remains<(buff.ascendance.duration+cooldown.ascendance.remains)&cooldown.ascendance.remains<15)
     --actions.single_asc+=/earthquake,if=buff.echoes_of_the_great_sundering.up
-    if S.Earthquake:IsCastable() and Player.Buff(EchoesOfTheGreatSundering) then
+    if S.Earthquake:IsCastable() and Player:Buff(S.EchoesOfTheGreatSundering) then
       if AR.Cast(S.Earthquake) then return ""; end
     end
     --actions.single_asc+=/lava_beam,if=active_enemies>1&spell_targets.lava_beam>1
     --actions.single_asc+=/lightning_bolt,if=buff.power_of_the_maelstrom.up&spell_targets.chain_lightning<3
-    if S.LightningBolt:IsCastable() and Cache.EnemiesCount[40]<3 and Player.Buff(PowerOfTheMaelstrom) then
+    if S.LightningBolt:IsCastable() and Cache.EnemiesCount[40]<3 and Player:Buff(S.PowerOfTheMaelstrom) then
       if AR.Cast(S.LightningBolt) then return ""; end
     end
     --actions.single_asc+=/chain_lightning,if=active_enemies>1&spell_targets.chain_lightning>1
@@ -152,7 +153,7 @@
       if AR.Cast(S.LightningBolt) then return ""; end
     end
     --actions.single_asc+=/flame_shock,moving=1,target_if=refreshable
-    if S.FlameShock:IsCastable() and GetUnitSpeed("player")>0 and Target.DebuffRemains(S.FlameShock)<9 then
+    if S.FlameShock:IsCastable() and GetUnitSpeed("player")>0 and Target:DebuffRemains(S.FlameShock)<9 then
       if AR.Cast(S.FlameShock) then return ""; end
     end
     --actions.single_asc+=/earth_shock,moving=1
