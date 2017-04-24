@@ -9,6 +9,12 @@
 --- ============================ CONTENT ============================
   -- All settings here should be moved into the GUI someday.
   AR.GUISettings.APL.Shaman = {
+    Commons = {
+
+    },
+    Elemental = {
+
+    },
     Enhancement = {
       --{Display GCD as OffGcd, ForceReturn}
       GCDasOffGCD = {

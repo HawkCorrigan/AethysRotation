@@ -19,10 +19,10 @@
 --- ============================ CONTENT ============================
 --- ======= APL LOCALS =======
   local Everyone = AR.Commons.Everyone;
-  local Class = AR.Commons.Class;
+  local Shaman = AR.Commons.Shaman;
   -- Spells
-  if not Spell.Class then Spell.Class = {}; end
-  Spell.Class.Spec = {
+  if not Spell.Shaman then Spell.Shaman = {}; end
+  Spell.Shaman.Elemental = {
 -- Racials
     ArcaneTorrent                 = Spell(25046),
     Berserking                    = Spell(26297),
@@ -84,87 +84,87 @@
   local Settings = {
     General = AR.GUISettings.General,
     Commons = AR.GUISettings.APL.Shaman.Commons,
-    Spec = AR.GUISettings.APL.Shaman.Spec
+    Elemental = AR.GUISettings.APL.Shaman.Elemental
   };
 
 
 --- ======= ACTION LISTS =======
   local function Ascendance()
-    --# Single Target Action Priority List for Ascendance Spec
-    --actions.single_asc=ascendance,if=dot.flame_shock.remains>buff.ascendance.duration&(time>=60|buff.bloodlust.up)&cooldown.lava_burst.remains>0&!buff.stormkeeper.up
-    if S.Ascendance:IsCastable() and Target:DebuffRemains(S.FlameShock)>15 and not Player:Buff(S.Stormkeeper) then
-      if AR.Cast(S.Ascendance) then return ""; end
-    end
-    --actions.single_asc+=/flame_shock,if=!ticking|dot.flame_shock.remains<=gcd
-    if S.FlameShock:IsCastable() and (not Target:Debuff(S.FlameShock) or Target:DebuffRemains(S.FlameShock)<1.5) then
-      if AR.Cast(S.FlameShock) then return ""; end
-    end
-    --actions.single_asc+=/flame_shock,if=maelstrom>=20&remains<=buff.ascendance.duration&cooldown.ascendance.remains+buff.ascendance.duration<=duration
-    if S.FlameShock:IsCastable() and Player:Maelstrom()>=20 and Target:DebuffRemains(S.FlameShock)<=15 and S.Ascendance:Cooldown()+15<=30 then
-      if AR.Cast(S.FlameShock) then return ""; end
-  end
+--    --# Single Target Action Priority List for Ascendance Spec
+--    --actions.single_asc=ascendance,if=dot.flame_shock.remains>buff.ascendance.duration&(time>=60|buff.bloodlust.up)&cooldown.lava_burst.remains>0&!buff.stormkeeper.up
+--    if S.Ascendance:IsCastable() and Target:DebuffRemains(S.FlameShock)>15 and not Player:Buff(S.Stormkeeper) then
+--      if AR.Cast(S.Ascendance) then return ""; end
+--    end
+--    --actions.single_asc+=/flame_shock,if=!ticking|dot.flame_shock.remains<=gcd
+--    if S.FlameShock:IsCastable() and (not Target:Debuff(S.FlameShock) or Target:DebuffRemains(S.FlameShock)<1.5) then
+--      if AR.Cast(S.FlameShock) then return ""; end
+--    end
+--    --actions.single_asc+=/flame_shock,if=maelstrom>=20&remains<=buff.ascendance.duration&cooldown.ascendance.remains+buff.ascendance.duration<=duration
+--    if S.FlameShock:IsCastable() and Player:Maelstrom()>=20 and Target:DebuffRemains(S.FlameShock)<=15 and S.Ascendance:Cooldown()+15<=30 then
+--      if AR.Cast(S.FlameShock) then return ""; end
+--  end
     --actions.single_asc+=/elemental_blast
     if S.ElementalBlast:IsCastable() then
       if AR.Cast(S.ElementalBlast) then return ""; end
     end
-    --actions.single_asc+=/earthquake,if=buff.echoes_of_the_great_sundering.up&!buff.ascendance.up&maelstrom>=86
-    if S.Earthquake:IsCastable() and Player.Buff(S.EchoesOfTheGreatSundering) and not Player:Buff(S.AscendanceBuff) and Player:Maelstrom()>=86 then
-      if AR.Cast(S.Earthquake) then return ""; end
-    end
-    --actions.single_asc+=/earth_shock,if=maelstrom>=117|!artifact.swelling_maelstrom.enabled&maelstrom>=92
-    if S.EarthShock:IsCastable() then
-      if AR.Cast(S.EarthShock) then return ""; end
-    end
-        --# Keep SK for large or soon add waves.
-        --actions.single_asc+=/stormkeeper,if=raid_event.adds.count<3|raid_event.adds.in>50
-        --actions.single_asc+=/liquid_magma_totem,if=raid_event.adds.count<3|raid_event.adds.in>50
-    --actions.single_asc+=/lightning_bolt,if=buff.power_of_the_maelstrom.up&buff.stormkeeper.up&spell_targets.chain_lightning<3
-    if S.LightningBolt:IsCastable() then
-      if AR.Cast(S.LightningBolt) then return ""; end
-    end
-    --actions.single_asc+=/lava_burst,if=dot.flame_shock.remains>cast_time&(cooldown_react|buff.ascendance.up)
-    if S.LavaBurst:IsCastable() then
-      if AR.Cast(S.LavaBurst) then return ""; end
-    end
-    --actions.single_asc+=/flame_shock,if=maelstrom>=20&buff.elemental_focus.up,target_if=refreshable
-    if S.FlameShock:IsCastable() and Player:Maelstrom()>=20 and Player:Buff(S.ElementalFocus) and Target:DebuffRemains(S.FlameShock)<=9 then
-      if AR.Cast(S.FlameShock) then return ""; end
-    end
-    --actions.single_asc+=/earth_shock,if=maelstrom>=111|!artifact.swelling_maelstrom.enabled&maelstrom>=86
-    if S.EarthShock:IsCastable() and Player:Maelstrom()>=111 or (not S.SwellingMaelstrom:ArtifactEnabled() and Player:Maelstrom()>86) then
-      if AR.Cast(S.EarthShock) then return ""; end
-    end
-    --actions.single_asc+=/totem_mastery,if=buff.resonance_totem.remains<10|(buff.resonance_totem.remains<(buff.ascendance.duration+cooldown.ascendance.remains)&cooldown.ascendance.remains<15)
-    --actions.single_asc+=/earthquake,if=buff.echoes_of_the_great_sundering.up
-    if S.Earthquake:IsCastable() and Player:Buff(S.EchoesOfTheGreatSundering) then
-      if AR.Cast(S.Earthquake) then return ""; end
-    end
-    --actions.single_asc+=/lava_beam,if=active_enemies>1&spell_targets.lava_beam>1
-    --actions.single_asc+=/lightning_bolt,if=buff.power_of_the_maelstrom.up&spell_targets.chain_lightning<3
-    if S.LightningBolt:IsCastable() and Cache.EnemiesCount[40]<3 and Player:Buff(S.PowerOfTheMaelstrom) then
-      if AR.Cast(S.LightningBolt) then return ""; end
-    end
-    --actions.single_asc+=/chain_lightning,if=active_enemies>1&spell_targets.chain_lightning>1
-    if S.ChainLightning:IsCastable() and Cache.EnemiesCount[40]>1 then
-      if AR.SuggestCast(S.ChainLightning) then return ""; end
-    end
-    --actions.single_asc+=/lightning_bolt
-    if S.LightningBolt:IsCastable() then
-      if AR.Cast(S.LightningBolt) then return ""; end
-    end
-    --actions.single_asc+=/flame_shock,moving=1,target_if=refreshable
-    if S.FlameShock:IsCastable() and GetUnitSpeed("player")>0 and Target:DebuffRemains(S.FlameShock)<9 then
-      if AR.Cast(S.FlameShock) then return ""; end
-    end
-    --actions.single_asc+=/earth_shock,moving=1
-    if S.EarthShock:IsCastable() and GetUnitSpeed("player")>0 then
-      if AR.Cast(S.EarthShock) then return ""; end
-    end
-    --actions.single_asc+=/flame_shock,moving=1,if=movement.distance>6
-    if S.FlameShock:IsCastable() and GetUnitSpeed("player")>0 then
-      if AR.Cast(S.FlameShock) then return ""; end
-    end
-
+--    --actions.single_asc+=/earthquake,if=buff.echoes_of_the_great_sundering.up&!buff.ascendance.up&maelstrom>=86
+--    if S.Earthquake:IsCastable() and Player:Buff(S.EchoesOfTheGreatSundering) and not Player:Buff(S.AscendanceBuff) and Player:Maelstrom()>=86 then
+--      if AR.Cast(S.Earthquake) then return ""; end
+--    end
+--    --actions.single_asc+=/earth_shock,if=maelstrom>=117|!artifact.swelling_maelstrom.enabled&maelstrom>=92
+--    if S.EarthShock:IsCastable() then
+--      if AR.Cast(S.EarthShock) then return ""; end
+--    end
+--        --# Keep SK for large or soon add waves.
+--        --actions.single_asc+=/stormkeeper,if=raid_event.adds.count<3|raid_event.adds.in>50
+--        --actions.single_asc+=/liquid_magma_totem,if=raid_event.adds.count<3|raid_event.adds.in>50
+--    --actions.single_asc+=/lightning_bolt,if=buff.power_of_the_maelstrom.up&buff.stormkeeper.up&spell_targets.chain_lightning<3
+--    if S.LightningBolt:IsCastable() then
+--      if AR.Cast(S.LightningBolt) then return ""; end
+--    end
+--    --actions.single_asc+=/lava_burst,if=dot.flame_shock.remains>cast_time&(cooldown_react|buff.ascendance.up)
+--    if S.LavaBurst:IsCastable() then
+--      if AR.Cast(S.LavaBurst) then return ""; end
+--    end
+--    --actions.single_asc+=/flame_shock,if=maelstrom>=20&buff.elemental_focus.up,target_if=refreshable
+--    if S.FlameShock:IsCastable() and Player:Maelstrom()>=20 and Player:Buff(S.ElementalFocus) and Target:DebuffRemains(S.FlameShock)<=9 then
+--      if AR.Cast(S.FlameShock) then return ""; end
+--    end
+--    --actions.single_asc+=/earth_shock,if=maelstrom>=111|!artifact.swelling_maelstrom.enabled&maelstrom>=86
+--    if S.EarthShock:IsCastable() and Player:Maelstrom()>=111 or (not S.SwellingMaelstrom:ArtifactEnabled() and Player:Maelstrom()>86) then
+--      if AR.Cast(S.EarthShock) then return ""; end
+--    end
+--    --actions.single_asc+=/totem_mastery,if=buff.resonance_totem.remains<10|(buff.resonance_totem.remains<(buff.ascendance.duration+cooldown.ascendance.remains)&cooldown.ascendance.remains<15)
+--    --actions.single_asc+=/earthquake,if=buff.echoes_of_the_great_sundering.up
+--    if S.Earthquake:IsCastable() and Player:Buff(S.EchoesOfTheGreatSundering) then
+--      if AR.Cast(S.Earthquake) then return ""; end
+--    end
+--    --actions.single_asc+=/lava_beam,if=active_enemies>1&spell_targets.lava_beam>1
+--    --actions.single_asc+=/lightning_bolt,if=buff.power_of_the_maelstrom.up&spell_targets.chain_lightning<3
+--    if S.LightningBolt:IsCastable() and Cache.EnemiesCount[40]<3 and Player:Buff(S.PowerOfTheMaelstrom) then
+--      if AR.Cast(S.LightningBolt) then return ""; end
+--    end
+--    --actions.single_asc+=/chain_lightning,if=active_enemies>1&spell_targets.chain_lightning>1
+--    if S.ChainLightning:IsCastable() and Cache.EnemiesCount[40]>1 then
+--      if AR.SuggestCast(S.ChainLightning) then return ""; end
+--    end
+--    --actions.single_asc+=/lightning_bolt
+--    if S.LightningBolt:IsCastable() then
+--      if AR.Cast(S.LightningBolt) then return ""; end
+--    end
+--    --actions.single_asc+=/flame_shock,moving=1,target_if=refreshable
+--    if S.FlameShock:IsCastable() and GetUnitSpeed("player")>0 and Target:DebuffRemains(S.FlameShock)<9 then
+--      if AR.Cast(S.FlameShock) then return ""; end
+--    end
+--    --actions.single_asc+=/earth_shock,moving=1
+--    if S.EarthShock:IsCastable() and GetUnitSpeed("player")>0 then
+--      if AR.Cast(S.EarthShock) then return ""; end
+--    end
+--    --actions.single_asc+=/flame_shock,moving=1,if=movement.distance>6
+--    if S.FlameShock:IsCastable() and GetUnitSpeed("player")>0 then
+--      if AR.Cast(S.FlameShock) then return ""; end
+--    end
+  end
 
 --- ======= MAIN =======
   local function APL ()
@@ -192,7 +192,7 @@
     end
   end
 
-  AR.SetAPL(000, APL);
+  AR.SetAPL(262, APL);
 
 
 --- ======= SIMC =======
