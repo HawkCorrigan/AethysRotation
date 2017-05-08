@@ -8,6 +8,6 @@
 ## LoadOnDemand: 1
 ## Dependencies: AethysRotation
 
-Elemental.lua
 Settings.lua
 Enhancement.lua
+Elemental.lua
