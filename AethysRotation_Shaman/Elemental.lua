@@ -112,9 +112,15 @@
     if S.EarthShock:IsCastable() and Player:Maelstrom()>=117 or ((not S.SwellingMaelstrom:ArtifactEnabled()) and Player:Maelstrom()>=92) then
       if AR.Cast(S.EarthShock) then return ""; end
     end
-        --# Keep SK for large or soon add waves.
-        --actions.single_lr+=/stormkeeper,if=raid_event.adds.count<3|raid_event.adds.in>50
-        --actions.single_lr+=/liquid_magma_totem,if=raid_event.adds.count<3|raid_event.adds.in>50
+    --# Keep SK for large or soon add waves.
+    --actions.single_lr+=/stormkeeper,if=raid_event.adds.count<3|raid_event.adds.in>50
+    if S.Stormkeeper:IsCastable() and Cache.EnemiesCount[40]>=3 then
+      if AR.Cast(S.Stormkeeper) then return ""; end
+    end
+    --actions.single_lr+=/liquid_magma_totem,if=raid_event.adds.count<3|raid_event.adds.in>50
+    if S.LiquidMagmaTotem:IsCastable() and Cache.EnemiesCount[40]>=3 then
+      if AR.Cast(S.LiquidMagmaTotem) then return ""; end
+    end
     --actions.single_lr+=/lava_burst,if=dot.flame_shock.remains>cast_time&cooldown_react
     if S.LavaBurst:IsCastable() and Target:DebuffRemains(S.FlameShock)>1.5 then
       if AR.Cast(S.LavaBurst) then return ""; end
@@ -133,10 +139,25 @@
     end
     --# Use EQ on single target if you have a huge haste buff that increases haste above 50% and said buffs still last longer than 5 seconds OR two enemies.
     --actions.single_lr+=/earthquake,if=buff.echoes_of_the_great_sundering.up|artifact.seismic_storm.enabled&((active_enemies>1&spell_targets.chain_lightning>1)|spell_haste<=0.66&!(buff.bloodlust.up&buff.bloodlust.remains<5))
+    if S.Earthquake:IsCastable() and Player:Buff(S.EchoesOfTheGreatSundering) or (Artifact.SeismicStorm.Enabled and (Cache.EnemiesCount[40]>1 or Haste<=0.66 and not (Player:Buff(S.Bloodlust) and Player:BuffRemains(S.Bloodlust)))then
+      if AR.Cast(S.ChainLightning) then return ""; end
+    end
     --actions.single_lr+=/lightning_bolt,if=buff.power_of_the_maelstrom.up&spell_targets.chain_lightning<3,target_if=debuff.lightning_rod.down
+    if S.LightningBolt:IsCastable() and Player:Buff(S.PowerOfTheMaelstrom) and Cache.EnemiesCount[40]>1 then
+      if AR.Cast(S.LightningBolt) then return ""; end
+    end
     --actions.single_lr+=/lightning_bolt,if=buff.power_of_the_maelstrom.up&spell_targets.chain_lightning<3
+    if S.LightningBolt:IsCastable() and Player:Buff(S.PowerOfTheMastrom) and Cache.EnemiesCount[40]<3 then
+      if AR.Cast(S.LightningBolt) then return ""; end
+    end
     --actions.single_lr+=/chain_lightning,if=active_enemies>1&spell_targets.chain_lightning>1,target_if=debuff.lightning_rod.down
+    if S.ChainLightning:IsCastable() and Cache.EnemiesCount[40]>1 and Target:Debuff(S.LightningRod) then
+      if AR.Cast(S.ChainLightning) then return ""; end
+    end
     --actions.single_lr+=/chain_lightning,if=active_enemies>1&spell_targets.chain_lightning>1
+    if S.ChainLightning:IsCastable() and Cache.EnemiesCount[40]>1 then
+      if AR.Cast(S.ChainLightning) then return ""; end
+    end
     --actions.single_lr+=/lightning_bolt,target_if=debuff.lightning_rod.down
     if S.LightningBolt:IsCastable() and Target:DebuffRemains(S.LightningRod)>0 then
       if AR.Cast(S.LightningBolt) then return ""; end
@@ -201,7 +222,13 @@
     end
         --# Keep SK for large or soon add waves.
         --actions.single_asc+=/stormkeeper,if=raid_event.adds.count<3|raid_event.adds.in>50
+    if S.Stormkeeper:IsCastable() and Cache.EnemiesCount[40]>=3 then
+      if AR.Cast(S.Stormkeeper) then return ""; end
+    end
         --actions.single_asc+=/liquid_magma_totem,if=raid_event.adds.count<3|raid_event.adds.in>50
+    if S.LiquidMagmaTotem:IsCastable() and Cache.EnemiesCount[40]>=3 then
+      if AR.Cast(S.LiquidMagmaTotem) then return ""; end
+    end
     --actions.single_asc+=/lightning_bolt,if=buff.power_of_the_maelstrom.up&buff.stormkeeper.up&spell_targets.chain_lightning<3
     if S.LightningBolt:IsCastable() and Player:Buff(S.PowerOfTheMaelstrom) and Player:Buff(S.Stormkeeper) then
       if AR.Cast(S.LightningBolt) then return ""; end
@@ -227,6 +254,9 @@
       if AR.Cast(S.Earthquake) then return ""; end
     end
     --actions.single_asc+=/lava_beam,if=active_enemies>1&spell_targets.lava_beam>1
+    if S.LavaBeam:IsCastable() and Cache.EnemiesCount[40]>=3 then
+      if AR.Cast(S.LavaBeam) then return ""; end
+    end
     --actions.single_asc+=/lightning_bolt,if=buff.power_of_the_maelstrom.up&spell_targets.chain_lightning<3
     if S.LightningBolt:IsCastable() and Cache.EnemiesCount[40]<3 and Player:Buff(S.PowerOfTheMaelstrom) then
       if AR.Cast(S.LightningBolt) then return ""; end
